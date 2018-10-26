@@ -1,8 +1,11 @@
 package ffxiv
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 
 	"github.com/aerogo/http/client"
 )
@@ -12,12 +15,30 @@ func GetCharacterID(nick string, server string) (string, error) {
 	// Replace spaces with plus signs
 	nick = strings.Replace(nick, " ", "+", -1)
 
+	// Fetch the page
 	url := fmt.Sprintf("https://na.finalfantasyxiv.com/lodestone/character/?q=%s&worldname=%s", nick, server)
-	_, err := client.Get(url).End()
+	response, err := client.Get(url).End()
 
 	if err != nil {
 		return "", err
 	}
 
-	return "", nil
+	page := response.Bytes()
+	reader := bytes.NewReader(page)
+	document, err := goquery.NewDocumentFromReader(reader)
+
+	if err != nil {
+		return "", err
+	}
+
+	href := document.Find(".entry__link").First().AttrOr("href", "")
+
+	if !strings.HasPrefix(href, "/lodestone/character/") {
+		return "", nil
+	}
+
+	id := strings.TrimPrefix(href, "/lodestone/character/")
+	id = strings.TrimSuffix(id, "/")
+
+	return id, nil
 }
