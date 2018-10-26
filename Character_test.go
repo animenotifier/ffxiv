@@ -14,6 +14,8 @@ func TestGetCharacter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, character)
 	assert.NotZero(t, character.Level)
+	assert.Equal(t, "Aky Otara", character.Nick)
+	assert.Equal(t, "Asura", character.Server)
 }
 
 func TestGetCharacterFail(t *testing.T) {
