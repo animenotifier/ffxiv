@@ -2,6 +2,7 @@ package ffxiv
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -31,10 +32,16 @@ func GetCharacterID(nick string, server string) (string, error) {
 		return "", err
 	}
 
-	href := document.Find(".entry__link").First().AttrOr("href", "")
+	links := document.Find(".entry__link")
+
+	if links.Length() == 0 {
+		return "", errors.New("Character does not exist")
+	}
+
+	href := links.First().AttrOr("href", "")
 
 	if !strings.HasPrefix(href, "/lodestone/character/") {
-		return "", nil
+		return "", errors.New("Character does not exist")
 	}
 
 	id := strings.TrimPrefix(href, "/lodestone/character/")

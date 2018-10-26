@@ -13,3 +13,10 @@ func TestGetCharacterID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "9015414", id)
 }
+
+func TestGetCharacterIDFail(t *testing.T) {
+	id, err := ffxiv.GetCharacterID("asdfasdfghjklasdf", "Asura")
+
+	assert.Error(t, err)
+	assert.Empty(t, id)
+}
