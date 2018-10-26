@@ -89,8 +89,6 @@ func GetCharacter(id string) (*Character, error) {
 		ItemLevel: itemLevel,
 	}
 
-	fmt.Println(character)
-
 	return character, nil
 }
 
