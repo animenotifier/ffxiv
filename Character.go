@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/aerogo/http/client"
@@ -16,11 +17,12 @@ var digit = regexp.MustCompile("[0-9]+")
 
 // Character represents a Final Fantasy XIV character.
 type Character struct {
-	Nick      string
-	Server    string
-	Class     string
-	Level     int
-	ItemLevel int
+	Nick       string
+	Server     string
+	DataCenter string
+	Class      string
+	Level      int
+	ItemLevel  int
 }
 
 // GetCharacter fetches character data for a given character ID.
@@ -46,18 +48,46 @@ func GetCharacter(id string) (*Character, error) {
 		return nil, errors.New("Error parsing character name")
 	}
 
-	characterServer := document.Find(".frame__chara__world").Text()
+	// This will look like: "Asura (Mana)"
+	characterServerAndDataCenter := document.Find(".frame__chara__world").Text()
 
-	if characterServer == "" {
+	if characterServerAndDataCenter == "" {
 		return nil, errors.New("Error parsing character server")
 	}
 
+	// Normalize whitespace characters
+	characterServerAndDataCenter = strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return ' '
+		}
+
+		return r
+	}, characterServerAndDataCenter)
+
+	// Split the server and data center
+	serverInfo := strings.Split(characterServerAndDataCenter, " ")
+
+	if len(serverInfo) < 2 {
+		return nil, errors.New("Character server info does not seem to include the data center")
+	}
+
+	characterServer := serverInfo[0]
+	characterDataCenter := serverInfo[1]
+	characterDataCenter = strings.TrimPrefix(characterDataCenter, "(")
+	characterDataCenter = strings.TrimSuffix(characterDataCenter, ")")
+
+	if characterDataCenter == "" {
+		return nil, errors.New("Error parsing character data center")
+	}
+
+	// Level
 	characterLevel := document.Find(".character__class__data").Text()
 
 	if characterLevel == "" {
 		return nil, errors.New("Error parsing character level")
 	}
 
+	// Weapon
 	characterWeapon := document.Find(".db-tooltip__item__category").Text()
 
 	if characterWeapon == "" {
@@ -82,11 +112,12 @@ func GetCharacter(id string) (*Character, error) {
 	}
 
 	character := &Character{
-		Nick:      characterName,
-		Class:     className,
-		Server:    characterServer,
-		Level:     level,
-		ItemLevel: itemLevel,
+		Nick:       characterName,
+		Class:      className,
+		Server:     characterServer,
+		DataCenter: characterDataCenter,
+		Level:      level,
+		ItemLevel:  itemLevel,
 	}
 
 	return character, nil
